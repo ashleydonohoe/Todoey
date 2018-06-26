@@ -7,12 +7,15 @@
 //
 
 import UIKit
+import ChameleonFramework
 import RealmSwift
 
 class TodoListViewController: SwipeTableViewController {
     
     var items: Results<Item>?
     let realm = try! Realm()
+    
+    @IBOutlet weak var searchBar: UISearchBar!
     
     var selectedCategory: Category? {
         didSet {
@@ -23,7 +26,19 @@ class TodoListViewController: SwipeTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-         tableView.rowHeight = 100
+        tableView.rowHeight = 100
+        tableView.separatorStyle = .none
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        guard let colorHex = selectedCategory?.color else { fatalError() }
+        title = selectedCategory!.name
+        guard let navBar = navigationController?.navigationBar else { fatalError("Navbar not here")}
+        guard let navBarColor = UIColor(hexString: colorHex) else { fatalError() }
+        navBar.barTintColor = navBarColor
+        navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+            searchBar.barTintColor = navBarColor
+        navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor: ContrastColorOf(navBarColor, returnFlat: true)]
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -35,6 +50,10 @@ class TodoListViewController: SwipeTableViewController {
         let itemTitle = items?[indexPath.row].title ?? "No title"
         let itemStatus = items?[indexPath.row].done
         cell.textLabel?.text = itemTitle
+        if let color = UIColor(hexString: selectedCategory!.color)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(items!.count)) {
+            cell.backgroundColor = color
+            cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+        }
         cell.accessoryType = itemStatus! ? .checkmark : .none
         return cell
     }
